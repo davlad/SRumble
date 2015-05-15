@@ -8,10 +8,12 @@ public class FileChooser {
 	private File f;
 	
 	public FileChooser() {
+		
 		JFileChooser chooser = new JFileChooser();
 	    FileNameExtensionFilter filter = new FileNameExtensionFilter(
 	        "MP3 and WAV Sound", "mp3", "wav");
 	    chooser.setFileFilter(filter);
+	    
 	    int returnVal = chooser.showOpenDialog(null);
 	    if(returnVal == JFileChooser.APPROVE_OPTION) {
 	       System.out.println("You chose to open this file: " +
