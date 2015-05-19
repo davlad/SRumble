@@ -28,5 +28,6 @@ public class Main{
 		for(int i = 0; i < b.getBytes().length; i++) {
 			System.out.println(b.getBytes()[i]);
 		}
+		System.out.println("length is: " + b.getBytes().length);
 	}
 }
