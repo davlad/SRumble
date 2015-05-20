@@ -1,14 +1,5 @@
 
 import java.io.File;
-import java.io.IOException;
-
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.UnsupportedAudioFileException;
-
-
 
 public class Main{
 	
@@ -24,7 +15,9 @@ public class Main{
 
 	public static void main(String[] args) {
 		clip = chooser.getFile();
-		b = new FileToBytes(clip);
+		//b = new FileToBytes(clip);
+		SoundClip tmp = new SoundClip(0, clip);
+		b = new FileToBytes(tmp.getClip());
 		for(int i = 0; i < b.getBytes().length; i++) {
 			System.out.println(b.getBytes()[i]);
 		}

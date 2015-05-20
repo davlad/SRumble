@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import com.sun.media.sound.FFT;
 
 import javazoom.jl.converter.*;
 
@@ -22,7 +25,7 @@ public class FileToBytes {
 		Converter c = new Converter();
 		b = WAVToBytes();
 	}
-	
+		
 	private byte[] WAVToBytes() {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		BufferedInputStream in = null;
@@ -52,5 +55,14 @@ public class FileToBytes {
 		}
 		byte[] audioBytes = out.toByteArray();
 		return audioBytes;
+	}
+	
+	public static double[] toDoubleArray(byte[] byteArray){
+	    int times = Double.SIZE / Byte.SIZE;
+	    double[] doubles = new double[byteArray.length / times];
+	    for(int i=0;i<doubles.length;i++){
+	        doubles[i] = ByteBuffer.wrap(byteArray, i*times, times).getDouble();
+	    }
+	    return doubles;
 	}
 }
