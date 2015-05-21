@@ -8,7 +8,7 @@ public class SoundClip {
 	
 	public SoundClip(int n, File f) {
 		src = f.getAbsolutePath();
-		dest = "/tmp/s_" + n + ".wav";
+		dest = "/tmp/SRumble/s_" + n + ".wav";
 		copyAudio(src, dest, n);
 	  }
 
