@@ -1,5 +1,4 @@
 import java.io.File;
-
 import processing.core.*;
 import ddf.minim.*;
 import ddf.minim.analysis.*;
@@ -13,8 +12,8 @@ public class Sketch02 extends PApplet {
 	 
 	public void setup()
 	{
-	  size(800, 600);
-	 
+	  size(600, 400);
+	  frameRate(24);
 	  // always start Minim first!
 	  minim = new Minim(this);
 	 
@@ -41,16 +40,22 @@ public class Sketch02 extends PApplet {
 	  fft.forward(song.mix);
 	 
 	  stroke(255, 0, 0, 128);
+	  strokeWeight(5);
 	  // draw the spectrum as a series of vertical lines
 	  // I multiple the value of getBand by 4 
 	  // so that we can see the lines better
-	  for(int i = 0; i < fft.specSize(); i++)
-	  {
-	    line(i*20, height, i*20, height - fft.getBand(i)*200);
+	  for(int i = 0; i < fft.specSize(); i++) {
+		  if (fft.getBand(i)*20 > height/4) {
+			  line(i*6, height/2, i*6, height/4);
+		  } else {
+			  line(i*6, height/2, i*6, height/2 - fft.getBand(i)*20 - 20);
+		  }
+	    //line(i*6, height/2, i*6, height/2 - fft.getBand(i)*20 - 20);
 	    //rect(i*5, height/3, 5, height - fft.getBand(i)*100);
 	  }
 	 
 	  stroke(255);
+	  strokeWeight(2);
 	  // I draw the waveform by connecting 
 	  // neighbor values with a line. I multiply 
 	  // each of the values by 50 
@@ -58,10 +63,10 @@ public class Sketch02 extends PApplet {
 	  // this means that they have values between -1 and 1. 
 	  // If we don't scale them up our waveform 
 	  // will look more or less like a straight line.
-	  for(int i = 0; i < song.left.size() - 1; i++)
+	  float step = width/(song.mix.size()-1);
+	  for(int i = 0; i < song.mix.size() - 1; i++)
 	  {
-	    line(i+200, 50 + song.left.get(i)*200, i+201, 50 + song.left.get(i+1)*200);
-	    line(i+200, 450 + song.right.get(i)*200, i+201, 450 + song.right.get(i+1)*200);
+	    line(i*step, height*3/4 + song.mix.get(i)*50, (i+1)*step, height*3/4 + song.mix.get(i+1)*50);
 	  }
 	}
 

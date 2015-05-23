@@ -11,7 +11,7 @@ public class FileChooser {
 		
 		JFileChooser chooser = new JFileChooser();
 	    FileNameExtensionFilter filter = new FileNameExtensionFilter(
-	        "MP3 and WAV Sound", "mp3", "wav");
+	        "Stereo MP3", "mp3");
 	    chooser.setFileFilter(filter);
 	    
 	    int returnVal = chooser.showOpenDialog(null);
