@@ -4,12 +4,13 @@ import processing.core.*;
 import processing.event.MouseEvent;
 import ddf.minim.*;
 import ddf.minim.analysis.*;
+import processing.opengl.*;
 
 public class Sketch02 extends PApplet {
 	static final long serialVersionUID = 1;
 	private Minim minim;
 	private AudioPlayer song;
-	private FFT fft;
+	private FFT fftAct;
 	private File clip;
 	
 	private float cameraDist = 200;
@@ -20,29 +21,24 @@ public class Sketch02 extends PApplet {
 	private float maxAY = radians(-90);
 	
 	private float maxLevel = 0;
+	
+	private FFT fftLog;
+	private float[] fftVals;
+	
 	 
 	public void setup() {
 		size(600, 600, P3D);
 		frameRate(60);
 		// always start Minim first!
 		minim = new Minim(this);
-/*		
-		// specify 512 for the length of the sample buffers
-		// the default buffer size is 1024
-		FileChooser c = new FileChooser();
-		clip = c.getFile();
-
-		//song = minim.loadFile(clip.getAbsolutePath(), 1024/2);
-		song = minim.loadFile(clip.getAbsolutePath(), 512);
-*/
+		
 		song = minim.loadFile("/home/daniel/Music/tristam/Drumstep_-_Tristam_Braken_-_Flight_Monstercat_Release.mp3", 512);
+		//song = minim.loadFile("/data/music/Classical/Britten. Works for Oboe/01 - Six Metamorphoses after Ovid. - I. Pan.mp3", 512);
 		song.play();
 		
-		// an FFT needs to know how 
-		// long the audio buffers it will be analyzing are
-		// and also needs to know 
-		// the sample rate of the audio it is analyzing
-		fft = new FFT(song.bufferSize(), song.sampleRate());
+		//fftAct = new FFT(song.bufferSize(), song.sampleRate());
+		//fftLog = new FFT(song.bufferSize(), song.sampleRate());
+		//fftLog.logAverages( 22, 12 );
 	}
 	
 	public void mouseWheel(MouseEvent event) {
@@ -51,11 +47,15 @@ public class Sketch02 extends PApplet {
 	 
 	public void draw() {
 		background(0);
-		fft.forward(song.mix);
+		//fftAct.forward(song.mix);
+		//fftLog.forward(song.mix);
+		
+		
 		setupCamera();
 		level3d();
 		
 		//simpleHist();
+		//logHist();
 		//simpleWave();
 		//amplitude();
 	}
@@ -98,6 +98,8 @@ public class Sketch02 extends PApplet {
 		translate(0, -maxLevel*(float)levelScale(), 0);
 		box(90, 5, 90);
 		text("maxLevel= " + maxLevel, 100, 0, 0);
+		translate(0, maxLevel*(float)levelScale()+10, 0);
+		box(600, 20, 100);
 	}
 	
 	private double levelScale() {
@@ -105,11 +107,44 @@ public class Sketch02 extends PApplet {
 	}
 	
 	private void simpleHist() {
-		stroke(255, 0, 0, 128);
+		stroke(255, 0, 0, 256);
+		strokeWeight(7);
+		line(10, (float)((float)height*0.95), (fftLog.specSize()-1)*6 +10, (float)((float)height*0.95));
 		strokeWeight(5);
-		for(int i = 0; i < fft.specSize(); i++) {
-			line(i*6, height/2, i*6, height/2 - fft.getBand(i)*20 - 20);
+		for(int i = 0; i < fftLog.specSize(); i++) {
+			line((float)(i*6 +10), (float)((float)height*0.95), (float)(i*6 +10),
+					(float)((float)height*0.95 - fftLog.getBand(i)*20 - 20));
 		}
+	}
+	
+	private void logHist() {
+		float centerFreq = 0;
+		float spectrumScale = (float) 0.1;
+		
+	    for(int i = 0; i < fftLog.avgSize(); i++) {
+	    	centerFreq = fftLog.getAverageCenterFrequency(i);
+	      // how wide is this average in Hz?
+	    	float averageWidth = fftLog.getAverageBandWidth(i);   
+	      
+	      // we calculate the lowest and highest frequencies
+	      // contained in this average using the center frequency
+	      // and bandwidth of this average.
+	    	float lowFreq  = centerFreq - averageWidth/2;
+	    	float highFreq = centerFreq + averageWidth/2;
+	      
+	      // freqToIndex converts a frequency in Hz to a spectrum band index
+	      // that can be passed to getBand. in this case, we simply use the 
+	      // index as coordinates for the rectangle we draw to represent
+	      // the average.
+	    	int xl = (int)fftLog.freqToIndex(lowFreq);
+	    	int xr = (int)fftLog.freqToIndex(highFreq);
+	      
+	      // draw a rectangle for each average, multiply the value by spectrumScale so we can see it better
+	    	//rect( xl, height, xr, height - fftLog.getAvg(i)*spectrumScale );
+	    	stroke(255, 0, 0, 256);
+	    	strokeWeight(5);
+	    	line (i*6+10, height, i*6+10, height-10 - exp(fftLog.getAvg(i)*spectrumScale));
+	    }
 	}
 	
 	private void amplitude() {
