@@ -7,21 +7,25 @@ import ddf.minim.analysis.*;
 import processing.opengl.*;
 
 public class Sketch02 extends PApplet {
+	//system
 	static final long serialVersionUID = 1;
 	private Minim minim;
 	private AudioPlayer song;
 	private FFT fftAct;
 	private File clip;
-	
+	//translation
+	private PVector t = new PVector(0, 0, 0);
+	//3D Camera
 	private float cameraDist = 200;
 	private float scrollingSpeed = 20;
 	private float minAX = radians(90);
 	private float maxAX = radians(-90);
-	private float minAY = radians(0);
+	private float minAY = radians(30);
 	private float maxAY = radians(-90);
-	
+	//LevelVis
 	private float maxLevel = 0;
-	
+	private float maxLevelBoxHeight = 5;
+	//LogarithmicFFT
 	private FFT fftLog;
 	private float[] fftVals;
 	
@@ -32,13 +36,13 @@ public class Sketch02 extends PApplet {
 		// always start Minim first!
 		minim = new Minim(this);
 		
-		song = minim.loadFile("/home/daniel/Music/tristam/Drumstep_-_Tristam_Braken_-_Flight_Monstercat_Release.mp3", 512);
+		song = minim.loadFile("/home/daniel/Music/tristam/Drumstep_-_Tristam_Braken_-_Flight_Monstercat_Release.mp3", 512*2);
 		//song = minim.loadFile("/data/music/Classical/Britten. Works for Oboe/01 - Six Metamorphoses after Ovid. - I. Pan.mp3", 512);
 		song.play();
 		
 		//fftAct = new FFT(song.bufferSize(), song.sampleRate());
 		//fftLog = new FFT(song.bufferSize(), song.sampleRate());
-		//fftLog.logAverages( 22, 12 );
+		//fftLog.logAverages( 22, 15 );
 	}
 	
 	public void mouseWheel(MouseEvent event) {
@@ -52,6 +56,7 @@ public class Sketch02 extends PApplet {
 		
 		
 		setupCamera();
+		lightSetUp();
 		level3d();
 		
 		//simpleHist();
@@ -89,17 +94,39 @@ public class Sketch02 extends PApplet {
 			maxLevel*=.99;
 		}
 		noStroke();
-		lights();
-		fill(153);
+		//lights();
+		material(0, 52, 102, 255);
 		float boxHeight = level*(float)levelScale();
 		translate(0, -boxHeight/2, 0);
 		box(90, boxHeight, 90);
-		translate(0, boxHeight/2, 0);
-		translate(0, -maxLevel*(float)levelScale(), 0);
-		box(90, 5, 90);
+		//translate(0, boxHeight/2, 0);
+		translate(0, -maxLevel*(float)levelScale() + boxHeight/2, 0);
+		box(90, maxLevelBoxHeight, 90);
 		text("maxLevel= " + maxLevel, 100, 0, 0);
 		translate(0, maxLevel*(float)levelScale()+10, 0);
 		box(600, 20, 100);
+	}
+	
+	private void material(float r, float g, float b, int s) {
+		fill(0, 51, 102);
+		specular(s);
+		shininess(9);
+	}
+	
+	public void translate(float x, float y, float z) {
+		super.translate(x, y, z);
+		t = new PVector(x+t.x, y+t.y, z+t.z);
+	}
+	
+	private void transTo(float x, float y, float z) {
+		translate(-t.x, -t.y, -t.z);
+		translate(x, y, z);
+	}
+
+	private void lightSetUp() {
+		ambientLight(102, 102, 102);
+		lightSpecular(255, 255, 255);
+		pointLight(255, 255, 255, (float)width*(float).75, (float)height*(float).25, (float)height*(float).25);
 	}
 	
 	private double levelScale() {
@@ -119,23 +146,19 @@ public class Sketch02 extends PApplet {
 	
 	private void logHist() {
 		float centerFreq = 0;
-		float spectrumScale = (float) 0.1;
+		float spectrumScale = (float) 0.02;
 		
 	    for(int i = 0; i < fftLog.avgSize(); i++) {
 	    	centerFreq = fftLog.getAverageCenterFrequency(i);
 	      // how wide is this average in Hz?
 	    	float averageWidth = fftLog.getAverageBandWidth(i);   
 	      
-	      // we calculate the lowest and highest frequencies
-	      // contained in this average using the center frequency
-	      // and bandwidth of this average.
+	      // we calculate the lowest and highest frequencies contained in this average using the center frequency and bandwidth of this average.
 	    	float lowFreq  = centerFreq - averageWidth/2;
 	    	float highFreq = centerFreq + averageWidth/2;
 	      
-	      // freqToIndex converts a frequency in Hz to a spectrum band index
-	      // that can be passed to getBand. in this case, we simply use the 
-	      // index as coordinates for the rectangle we draw to represent
-	      // the average.
+	      // freqToIndex converts a frequency in Hz to a spectrum band index that can be passed to getBand. in this case, we simply use the 
+	      // index as coordinates for the rectangle we draw to represent the average.
 	    	int xl = (int)fftLog.freqToIndex(lowFreq);
 	    	int xr = (int)fftLog.freqToIndex(highFreq);
 	      
