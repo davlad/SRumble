@@ -28,23 +28,22 @@ public class Sketch02 extends PApplet {
 	//LogarithmicFFT
 	private FFT fftLog;
 	private float[] fftMaxVals;
+	private int minFreq = 22;
+	private int octaveSubs = 4;
+	private float histScale = (float)0.02;
 	
 	//color c;
 	
 	public void setup() {
 		size(600, 600, P3D);
-		//size(600, 600);
 		frameRate(60);
 		// always start Minim first!
 		minim = new Minim(this);
 		
 		song = minim.loadFile("/home/daniel/Music/tristam/Drumstep_-_Tristam_Braken_-_Flight_Monstercat_Release.mp3", 512*2);
+		//song = minim.loadFile("/home/daniel/Downloads/02 My Songs Know What You Did in the Dark (Light Em Up).mp3", 512*2);
 		//song = minim.loadFile("/data/music/Classical/Britten. Works for Oboe/01 - Six Metamorphoses after Ovid. - I. Pan.mp3", 512);
 		song.play();
-		
-		//fftAct = new FFT(song.bufferSize(), song.sampleRate());
-		//fftLog = new FFT(song.bufferSize(), song.sampleRate());
-		//fftLog.logAverages( 22, 15 );
 	}
 	
 	public void mouseWheel(MouseEvent event) {
@@ -54,16 +53,21 @@ public class Sketch02 extends PApplet {
 	public void draw() {
 		background(0);
 		//fftAct.forward(song.mix);
-		//fftLog.forward(song.mix);
-		scene3d();
-		//simpleHist();
-		//logHist();
-		//simpleWave();
+		//scene3d();
+		scene2d();
 	}
 	private void scene3d() {
 		setupCamera();
 		lightSetUp();
-		amplitude();
+		level3d();
+	}
+	
+	private void scene2d() {
+		//simpleHist();
+		//logHist();
+		histLine();
+		simpleWave();
+		level2d();
 	}
 	
 	private void setupCamera() {
@@ -86,29 +90,33 @@ public class Sketch02 extends PApplet {
 				map(mouseX, 0, width, minAX, maxAX));
 	}
 	
-	private void amplitude() {
+	private float maxAmplitude() {
 		float level = song.mix.level();
 		if (level > maxLevel) {
 			maxLevel = level;
 		} else {
 			maxLevel*=.99;
 		}
-		level3d(level);
-		//level2d(level);
+		return level;
 	}
 	
-	private void level3d(float level) {
+	private void level3d() {
 		noStroke();
 		//lights();
 		material(0, 52, 102, 255);
-		float boxHeight = level*(float)levelScale();
+		float boxHeight = maxAmplitude()*(float)levelScale();
+		levelVis(maxLevel, boxHeight);
+		//text("maxLevel= " + maxLevel, 100, 0, 0);
+		//translate(0, 10, 0);
+		//box(600, 20, 100);
+	}
+	
+	private void levelVis(float maxAmp, float boxHeight) {
 		translate(0, -boxHeight/2, 0);
 		box(90, boxHeight, 90);
-		translate(0, -maxLevel*(float)levelScale() + boxHeight/2, 0);
+		translate(0, -maxAmp*(float)levelScale() + boxHeight/2, 0);
 		box(90, maxLevelBoxHeight, 90);
-		text("maxLevel= " + maxLevel, 100, 0, 0);
-		translate(0, maxLevel*(float)levelScale()+10, 0);
-		box(600, 20, 100);
+		translate(0, maxAmp*(float)levelScale(), 0);
 	}
 	
 	private void material(float r, float g, float b, int s) {
@@ -128,6 +136,7 @@ public class Sketch02 extends PApplet {
 	}
 	
 	private void simpleHist() {
+		fftAct = new FFT(song.bufferSize(), song.sampleRate());
 		stroke(255, 0, 0, 256);
 		strokeWeight(7);
 		line(10, (float)((float)height*0.95), (fftLog.specSize()-1)*6 +10, (float)((float)height*0.95));
@@ -139,38 +148,28 @@ public class Sketch02 extends PApplet {
 	}
 	
 	private void logHist() {
-		float centerFreq = 0;
-		float spectrumScale = (float) 0.02;
-		
-	    for(int i = 0; i < fftLog.avgSize(); i++) {
-	    	centerFreq = fftLog.getAverageCenterFrequency(i);
-	      // how wide is this average in Hz?
-	    	float averageWidth = fftLog.getAverageBandWidth(i);   
-	      
-	      // we calculate the lowest and highest frequencies contained in this average using the center frequency and bandwidth of this average.
-	    	float lowFreq  = centerFreq - averageWidth/2;
-	    	float highFreq = centerFreq + averageWidth/2;
-	      
-	      // freqToIndex converts a frequency in Hz to a spectrum band index that can be passed to getBand. in this case, we simply use the 
-	      // index as coordinates for the rectangle we draw to represent the average.
-	    	int xl = (int)fftLog.freqToIndex(lowFreq);
-	    	int xr = (int)fftLog.freqToIndex(highFreq);
-	      
-	      // draw a rectangle for each average, multiply the value by spectrumScale so we can see it better
-	    	//rect( xl, height, xr, height - fftLog.getAvg(i)*spectrumScale );
-	    	stroke(255, 0, 0, 256);
-	    	strokeWeight(5);
-	    	line (i*6+10, height, i*6+10, height-10 - exp(fftLog.getAvg(i)*spectrumScale));
-	    }
+		fftLog = new FFT(song.bufferSize(), song.sampleRate());
+		fftLog.logAverages(minFreq, octaveSubs);
+		fftLog.forward(song.mix);
+	    
 	}
 	
-	private void level2d(float level) {
+	private void histLine() {
+		logHist();
+		stroke(255, 0, 0, 256);
+    	strokeWeight(5);
+    	for(int i = 0; i < fftLog.avgSize(); i++) {
+    		line (i*6+10, height, i*6+10, height-10 - exp(fftLog.getAvg(i)*histScale));
+    	}
+	}
+	
+	private void level2d() {
 		stroke(0, 255, 0, 255/2);
 		strokeWeight(50);
 		line((float)width/2, (float)height*15/16, (float)width/2,
 			(float)height*15/16 - song.mix.level()*(float)levelScale()*2);
 		
-		float maxHeight = level*(float)levelScale();
+		float maxHeight = maxAmplitude()*(float)levelScale();
 		line((float)width/2, (float)height*15/16 - maxLevel*(float)levelScale()*2,
 			(float)width/2, (float)height*15/16 - maxLevel*(float)levelScale()*2);
 	}
