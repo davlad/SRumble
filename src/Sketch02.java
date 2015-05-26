@@ -27,11 +27,13 @@ public class Sketch02 extends PApplet {
 	private float maxLevelBoxHeight = 5;
 	//LogarithmicFFT
 	private FFT fftLog;
-	private float[] fftVals;
+	private float[] fftMaxVals;
 	
-	 
+	//color c;
+	
 	public void setup() {
 		size(600, 600, P3D);
+		//size(600, 600);
 		frameRate(60);
 		// always start Minim first!
 		minim = new Minim(this);
@@ -53,16 +55,15 @@ public class Sketch02 extends PApplet {
 		background(0);
 		//fftAct.forward(song.mix);
 		//fftLog.forward(song.mix);
-		
-		
-		setupCamera();
-		lightSetUp();
-		level3d();
-		
+		scene3d();
 		//simpleHist();
 		//logHist();
 		//simpleWave();
-		//amplitude();
+	}
+	private void scene3d() {
+		setupCamera();
+		lightSetUp();
+		amplitude();
 	}
 	
 	private void setupCamera() {
@@ -80,26 +81,29 @@ public class Sketch02 extends PApplet {
 	}
 	
 	private PVector cameraPos() {
-		return spheric2Rect(
-				cameraDist, 
+		return spheric2Rect(cameraDist, 
 				map(mouseY, 0, height, minAY, maxAY), 
 				map(mouseX, 0, width, minAX, maxAX));
 	}
 	
-	private void level3d() {
+	private void amplitude() {
 		float level = song.mix.level();
 		if (level > maxLevel) {
 			maxLevel = level;
 		} else {
 			maxLevel*=.99;
 		}
+		level3d(level);
+		//level2d(level);
+	}
+	
+	private void level3d(float level) {
 		noStroke();
 		//lights();
 		material(0, 52, 102, 255);
 		float boxHeight = level*(float)levelScale();
 		translate(0, -boxHeight/2, 0);
 		box(90, boxHeight, 90);
-		//translate(0, boxHeight/2, 0);
 		translate(0, -maxLevel*(float)levelScale() + boxHeight/2, 0);
 		box(90, maxLevelBoxHeight, 90);
 		text("maxLevel= " + maxLevel, 100, 0, 0);
@@ -111,16 +115,6 @@ public class Sketch02 extends PApplet {
 		fill(0, 51, 102);
 		specular(s);
 		shininess(9);
-	}
-	
-	public void translate(float x, float y, float z) {
-		super.translate(x, y, z);
-		t = new PVector(x+t.x, y+t.y, z+t.z);
-	}
-	
-	private void transTo(float x, float y, float z) {
-		translate(-t.x, -t.y, -t.z);
-		translate(x, y, z);
 	}
 
 	private void lightSetUp() {
@@ -170,10 +164,15 @@ public class Sketch02 extends PApplet {
 	    }
 	}
 	
-	private void amplitude() {
-		stroke(0, 255, 0, 128);
-		strokeWeight(25);
-		line(10, height*7/8, width*song.mix.level()+10, height*7/8);
+	private void level2d(float level) {
+		stroke(0, 255, 0, 255/2);
+		strokeWeight(50);
+		line((float)width/2, (float)height*15/16, (float)width/2,
+			(float)height*15/16 - song.mix.level()*(float)levelScale()*2);
+		
+		float maxHeight = level*(float)levelScale();
+		line((float)width/2, (float)height*15/16 - maxLevel*(float)levelScale()*2,
+			(float)width/2, (float)height*15/16 - maxLevel*(float)levelScale()*2);
 	}
 	
 	private void simpleWave() {
