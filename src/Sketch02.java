@@ -28,9 +28,13 @@ public class Sketch02 extends PApplet {
 	//LogarithmicFFT
 	private FFT fftLog;
 	private float[] fftMaxVals;
-	private int minFreq = 22;
-	private int octaveSubs = 4;
-	private float histScale = (float)0.02;
+	private int minFreq = 22*1;
+	private int octaveSubs = 6;
+	private float histScale = (float).1;//.07;
+	private float[] fftLogAvgs;
+	private float[] histMaxLevel;
+	private float histSuperMaxLevel = 0;
+	private int i = 0;
 	
 	//color c;
 	
@@ -40,8 +44,9 @@ public class Sketch02 extends PApplet {
 		// always start Minim first!
 		minim = new Minim(this);
 		
-		song = minim.loadFile("/home/daniel/Music/tristam/Drumstep_-_Tristam_Braken_-_Flight_Monstercat_Release.mp3", 512*2);
+		//song = minim.loadFile("/home/daniel/Music/tristam/Drumstep_-_Tristam_Braken_-_Flight_Monstercat_Release.mp3", 512*2);
 		//song = minim.loadFile("/home/daniel/Downloads/02 My Songs Know What You Did in the Dark (Light Em Up).mp3", 512*2);
+		song = minim.loadFile("/home/daniel/Music/Dubstep/Ben_Moon_-_New_Beginning.mp3", 512*2);
 		//song = minim.loadFile("/data/music/Classical/Britten. Works for Oboe/01 - Six Metamorphoses after Ovid. - I. Pan.mp3", 512);
 		song.play();
 	}
@@ -67,7 +72,7 @@ public class Sketch02 extends PApplet {
 		//logHist();
 		histLine();
 		simpleWave();
-		level2d();
+		//level2d();
 	}
 	
 	private void setupCamera() {
@@ -106,7 +111,7 @@ public class Sketch02 extends PApplet {
 		material(0, 52, 102, 255);
 		float boxHeight = maxAmplitude()*(float)levelScale();
 		levelVis(maxLevel, boxHeight);
-		//text("maxLevel= " + maxLevel, 100, 0, 0);
+		text("maxLevel= " + maxLevel, 100, 0, 0);
 		//translate(0, 10, 0);
 		//box(600, 20, 100);
 	}
@@ -115,6 +120,7 @@ public class Sketch02 extends PApplet {
 		translate(0, -boxHeight/2, 0);
 		box(90, boxHeight, 90);
 		translate(0, -maxAmp*(float)levelScale() + boxHeight/2, 0);
+		material(102, 0, 52, 255);
 		box(90, maxLevelBoxHeight, 90);
 		translate(0, maxAmp*(float)levelScale(), 0);
 	}
@@ -151,7 +157,25 @@ public class Sketch02 extends PApplet {
 		fftLog = new FFT(song.bufferSize(), song.sampleRate());
 		fftLog.logAverages(minFreq, octaveSubs);
 		fftLog.forward(song.mix);
-	    
+		if (i == 0) {
+			histMaxLevel = new float[fftLog.avgSize()];
+			fftLogAvgs = new float[fftLog.avgSize()];
+			i++;
+		}
+		for(int i = 0; i < fftLog.avgSize(); i++) {
+			float scale = map(exp(i*histScale), 0, fftLog.avgSize(), (float).02, (float).1); 
+			fftLogAvgs[i] = exp(fftLog.getAvg(i)*scale);
+			if (fftLogAvgs[i] > histMaxLevel[i]) {
+				histMaxLevel[i] = fftLogAvgs[i];
+			} else {
+				histMaxLevel[i]*=(float)0.99;
+			}
+			if (histMaxLevel[i] > histSuperMaxLevel) {
+				histSuperMaxLevel = histMaxLevel[i];
+			} else {
+				histSuperMaxLevel*=.99;
+			}
+		}
 	}
 	
 	private void histLine() {
@@ -159,7 +183,8 @@ public class Sketch02 extends PApplet {
 		stroke(255, 0, 0, 256);
     	strokeWeight(5);
     	for(int i = 0; i < fftLog.avgSize(); i++) {
-    		line (i*6+10, height, i*6+10, height-10 - exp(fftLog.getAvg(i)*histScale));
+    		//line(i*6+10, height, i*6+10, height-10 - fftLogAvgs[i]);
+    		line(i*6+10, (float)height-10 - histMaxLevel[i], i*6+10, (float)height-10 -histMaxLevel[i]-2);
     	}
 	}
 	
@@ -188,8 +213,3 @@ public class Sketch02 extends PApplet {
 		PApplet.main(new String[] { "--present", "Sketch01" });
 	}
 }
-
-
-
-
-
