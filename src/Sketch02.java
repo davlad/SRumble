@@ -11,26 +11,27 @@ public class Sketch02 extends PApplet {
 	static final long serialVersionUID = 1;
 	private Minim minim;
 	private AudioPlayer song;
-	private File clip;
-	//translation
-	private PVector t = new PVector(0, 0, 0);
 	//3D Camera
-	private float cameraDist = 2500*1;
-	private float scrollingSpeed = 100;
+	private float cameraDist = 1000;
+	private float scrollingSpeed = 50;
 	private float minAX = radians(150);
 	private float maxAX = radians(-150);
 	private float minAY = radians(150);
 	private float maxAY = radians(-150);
 	//LevelVis
-	private float maxLevelBoxHeight = 20;
+	private float maxLevelBoxHeight = 3;
+	private float boxWidth = 10;
+	private float boxDepth = 10;
+	private float boxSpacing = 3;
+	private float histHeightPos = 150;
 	//LogarithmicFFT
 	private FFT fft;
-	private int minFreq = 55;
-	private int octaveSubs = 6*2;
+	private int minFreq = 55/1;
+	private int octaveSubs = 6*1;
 	private int numOctaves = 7;
 	private int histLength = octaveSubs*numOctaves;
 	private float histScale() {
-		return ((float)height-20.0f)/(128.0f*0.5f);
+		return ((float)height-20.0f)/(128.0f*4f);
 	}
 	private float[] fftAvgs;
 	private float[] fftMax;
@@ -45,12 +46,6 @@ public class Sketch02 extends PApplet {
 		// always start Minim first!
 		minim = new Minim(this);
 		selectInput("Select a file to process:", "fileSelected");
-		
-		//song = minim.loadFile("/home/daniel/Music/tristam/Drumstep_-_Tristam_Braken_-_Flight_Monstercat_Release.mp3", 512*2);
-		//song = minim.loadFile("/home/daniel/Downloads/02 My Songs Know What You Did in the Dark (Light Em Up).mp3", 512*2);
-		//song = minim.loadFile("/home/daniel/Music/Dubstep/Ben_Moon_-_New_Beginning.mp3", 512*2);
-		//song = minim.loadFile("/home/daniel/Downloads/Braken - To The Stars.mp3", 512);
-		//song.play();
 	}
 	
 	public void fileSelected(File selection) {
@@ -64,8 +59,8 @@ public class Sketch02 extends PApplet {
 	}
 	
 	public void mouseWheel(MouseEvent event) {
-		  cameraDist += event.getCount()*scrollingSpeed;
-		}
+		cameraDist += event.getCount()*scrollingSpeed;
+	}
 	 
 	public void draw() {
 		if (song == null) { 
@@ -100,10 +95,13 @@ public class Sketch02 extends PApplet {
 	private void levelVis(int index) {
 		translate(0, -fftAvgs[index]/2, 0);
 		material(0, 0, 255, 255);
-		box(90, fftAvgs[index], 90);
+		box(boxWidth, fftAvgs[index], boxDepth);
 		translate(0, -fftMax[index] + fftAvgs[index]/2, 0);
-		material(map(fftMax[index], 0f, fftMaxVal, 0f, 255f), 0, map(fftMax[index], fftMaxVal, 0, 0, 255), 255);
-		box(90, maxLevelBoxHeight, 90);
+		material(	map(fftMax[index], 0f, fftMaxVal, 0f, 255f), 
+					0, 
+					map(fftMax[index], fftMaxVal, 0, 0, 255), 
+					255);
+		box(boxWidth, maxLevelBoxHeight, boxDepth);
 		translate(0, fftMax[index], 0);
 	}
 	
@@ -130,7 +128,6 @@ public class Sketch02 extends PApplet {
 		}
 		for(int i = 0; i < histLength; i++) {
 			fftAvgs[i] = fft.getAvg(i)*histScale();
-			//histArtsy();
 			if (fftAvgs[i] > fftMax[i]) {
 				fftMax[i] = fftAvgs[i];
 			} else {
@@ -144,16 +141,11 @@ public class Sketch02 extends PApplet {
 		}
 	}
 	
-	private void histArtsy() {
-		
-	}
-	
 	private void hist3d() {
-		
 		logHist();
-		translate((-95*(histLength))/2, 600, 0);
+		translate(-((histLength+1)*(boxWidth+boxSpacing))/2, histHeightPos, 0);
 		for(int i = 0; i < histLength; i++) {
-			translate(100, 0, 0);
+			translate(boxWidth+boxSpacing, 0, 0);
 			levelVis(i);
 		}
 	}
