@@ -20,25 +20,62 @@ public class Sketch02 extends PApplet {
 	private float maxAY = radians(-150);
 	//LevelVis
 	private float maxLevelBoxHeight = 3;
-	private float boxWidth = 10;
-	private float boxDepth = 10;
-	private float boxSpacing = 3;
-	private float histHeightPos = 150;
+	private float boxWidth = 17;
+	private float boxDepth = 15;
+	private float boxSpacing = 2;
+	private float histHeightPos = 200;
 	//LogarithmicFFT
 	private FFT fft;
 	private int minFreq = 55/1;
 	private int octaveSubs = 6*1;
 	private int numOctaves = 7;
-	private int histLength = octaveSubs*numOctaves;
+	private int histLength() {
+		return octaveSubs*numOctaves;
+	}
 	private float histScale() {
-		return ((float)height-20.0f)/(128.0f*4f);
+		return ((float)height-20.0f)/(128.0f*5f);
 	}
 	private float[] fftAvgs;
 	private float[] fftMax;
 	private float fftMaxVal = 0;
 	private int i = 0;
-	
+	//key bindings
+	boolean addOctSubs = false;
+	boolean subOctSubs = false;
+	boolean addHistHeight = false;
+	boolean subHistHeight = false;
+	boolean darker = false;
+	boolean lighter = false;
+	boolean redder = false;
+	boolean bluer = false;
+	boolean greener = false;
+
 	//color c;
+	
+	public void keyPressed() {
+		if (key == CODED) {
+			if (keyCode == RIGHT) {
+				addOctSubs = true;
+			}
+			if (keyCode == LEFT) {
+				subOctSubs = true;
+			}
+			if (keyCode == UP) {
+				addHistHeight = true;
+			}
+			if (keyCode == DOWN) {
+				subHistHeight = true;
+			}
+		}
+		
+	}
+	
+	public void keyReleased() {
+		addOctSubs = false;
+		subOctSubs = false;
+		addHistHeight = false;
+		subHistHeight = false;
+	}
 	
 	public void setup() {
 		size(1440, 800, P3D);
@@ -69,7 +106,26 @@ public class Sketch02 extends PApplet {
 		background(0);
 		setupCamera();
 		lightSetUp();
+		respondToKeys();
 		hist3d();
+	}
+	
+	private void respondToKeys() {
+		if (addOctSubs == true && octaveSubs < 13) {
+			octaveSubs++;
+			i=0;
+		}
+		if (subOctSubs == true && octaveSubs > 1) {
+			octaveSubs--;
+			i=0;
+		}
+		if (addHistHeight == true && histHeightPos > 0) {
+			histHeightPos-=10;
+		}
+		if (subHistHeight == true && histHeightPos < 500) {
+			histHeightPos+=10;
+		}
+		
 	}
 
 	private void setupCamera() {
@@ -96,13 +152,13 @@ public class Sketch02 extends PApplet {
 		translate(0, -fftAvgs[index]/2, 0);
 		material(0, 0, 255, 255);
 		box(boxWidth, fftAvgs[index], boxDepth);
-		translate(0, -fftMax[index] + fftAvgs[index]/2, 0);
+		translate(0, -fftMax[index] - maxLevelBoxHeight/2 + fftAvgs[index]/2, 0);
 		material(	map(fftMax[index], 0f, fftMaxVal, 0f, 255f), 
 					0, 
 					map(fftMax[index], fftMaxVal, 0, 0, 255), 
 					255);
 		box(boxWidth, maxLevelBoxHeight, boxDepth);
-		translate(0, fftMax[index], 0);
+		translate(0, fftMax[index] + maxLevelBoxHeight/2, 0);
 	}
 	
 	public void material(float r, float g, float b, int s) {
@@ -122,11 +178,11 @@ public class Sketch02 extends PApplet {
 		fft.logAverages(minFreq, octaveSubs);
 		fft.forward(song.mix);
 		if (i == 0) {
-			fftMax = new float[histLength];
-			fftAvgs = new float[histLength];
+			fftMax = new float[histLength()];
+			fftAvgs = new float[histLength()];
 			i++;
 		}
-		for(int i = 0; i < histLength; i++) {
+		for(int i = 0; i < histLength(); i++) {
 			fftAvgs[i] = fft.getAvg(i)*histScale();
 			if (fftAvgs[i] > fftMax[i]) {
 				fftMax[i] = fftAvgs[i];
@@ -143,8 +199,10 @@ public class Sketch02 extends PApplet {
 	
 	private void hist3d() {
 		logHist();
-		translate(-((histLength+1)*(boxWidth+boxSpacing))/2, histHeightPos, 0);
-		for(int i = 0; i < histLength; i++) {
+		translate(-((histLength()+1)*(boxWidth+boxSpacing))/2, histHeightPos, 0);
+		//translate(0, histHeightPos, 0);
+		for(int i = 0; i < histLength(); i++) {
+			//rotateY(radians(360)/histLength);
 			translate(boxWidth+boxSpacing, 0, 0);
 			levelVis(i);
 		}
