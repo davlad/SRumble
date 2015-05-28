@@ -11,7 +11,6 @@ public class Sketch02 extends PApplet {
 	static final long serialVersionUID = 1;
 	private Minim minim;
 	private AudioPlayer song;
-	private FFT fftAct;
 	private File clip;
 	//translation
 	private PVector t = new PVector(0, 0, 0);
@@ -23,19 +22,19 @@ public class Sketch02 extends PApplet {
 	private float minAY = radians(150);
 	private float maxAY = radians(-150);
 	//LevelVis
-	private float maxLevel = 0;
 	private float maxLevelBoxHeight = 20;
 	//LogarithmicFFT
-	private FFT fftLog;
-	private float[] fftMaxVals;
-	private int minFreq = 22*4;
-	private int octaveSubs = 6*1;
+	private FFT fft;
+	private int minFreq = 55;
+	private int octaveSubs = 6*2;
+	private int numOctaves = 7;
+	private int histLength = octaveSubs*numOctaves;
 	private float histScale() {
 		return ((float)height-20.0f)/(128.0f*0.75f);
 	}
-	private float[] fftLogAvgs;
-	private float[] histMaxLevel;
-	private float histSuperMaxLevel = 0;
+	private float[] fftAvgs;
+	private float[] fftMax;
+	private float fftMaxVal = 0;
 	private int i = 0;
 	
 	//color c;
@@ -47,9 +46,9 @@ public class Sketch02 extends PApplet {
 		minim = new Minim(this);
 		
 		//song = minim.loadFile("/home/daniel/Music/tristam/Drumstep_-_Tristam_Braken_-_Flight_Monstercat_Release.mp3", 512*2);
-		//song = minim.loadFile("/home/daniel/Downloads/02 My Songs Know What You Did in the Dark (Light Em Up).mp3", 512*2);
+		song = minim.loadFile("/home/daniel/Downloads/02 My Songs Know What You Did in the Dark (Light Em Up).mp3", 512*2);
 		//song = minim.loadFile("/home/daniel/Music/Dubstep/Ben_Moon_-_New_Beginning.mp3", 512*2);
-		song = minim.loadFile("/data/music/Classical/Britten. Works for Oboe/01 - Six Metamorphoses after Ovid. - I. Pan.mp3", 512);
+		//song = minim.loadFile("/home/daniel/Downloads/Braken - To The Stars.mp3", 512);
 		song.play();
 	}
 	
@@ -59,24 +58,11 @@ public class Sketch02 extends PApplet {
 	 
 	public void draw() {
 		background(0);
-		//fftAct.forward(song.mix);
-		scene3d();
-		//scene2d();
-	}
-	private void scene3d() {
 		setupCamera();
 		lightSetUp();
-		//level3d();
 		hist3d();
 	}
-	
-	private void scene2d() {
-		//simpleHist();
-		histLine();
-		//simpleWave();
-		//level2d();
-	}
-	
+
 	private void setupCamera() {
 		PVector cameraPosition = cameraPos();
 		camera(cameraPosition.x, cameraPosition.y, cameraPosition.z,
@@ -96,28 +82,7 @@ public class Sketch02 extends PApplet {
 				map(mouseY, 0, height, minAY, maxAY), 
 				map(mouseX, 0, width, minAX, maxAX));
 	}
-	
-	private float maxAmplitude() {
-		float level = song.mix.level();
-		if (level > maxLevel) {
-			maxLevel = level;
-		} else {
-			maxLevel*=.99;
-		}
-		return level;
-	}
-	
-	private void level3d() {
-		noStroke();
-		//lights();
-		material(0, 52, 102, 255);
-		float boxHeight = maxAmplitude()*(float)levelScale();
-		levelVis(maxLevel, boxHeight);
-		text("maxLevel= " + maxLevel, 100, 0, 0);
-		//translate(0, 10, 0);
-		//box(600, 20, 100);
-	}
-	
+
 	private void levelVis(float boxHeight, float maxAmp) {
 		translate(0, -boxHeight/2, 0);
 		material(0, 52, 102, 255);
@@ -140,78 +105,43 @@ public class Sketch02 extends PApplet {
 		pointLight(255, 255, 255, (float)width*(float).75, (float)height*(float).25, (float)height*(float).25);
 	}
 	
-	private double levelScale() {
-		return (double)height * 0.45;
-	}
-	
-	private void simpleHist() {
-		fftAct = new FFT(song.bufferSize(), song.sampleRate());
-		stroke(255, 0, 0, 256);
-		strokeWeight(7);
-		line(10, (float)((float)height*0.95), (fftLog.specSize()-1)*6 +10, (float)((float)height*0.95));
-		strokeWeight(5);
-		for(int i = 0; i < fftLog.specSize(); i++) {
-			line((float)(i*6 +10), (float)((float)height*0.95), (float)(i*6 +10),
-					(float)((float)height*0.95 - fftLog.getBand(i)*20 - 20));
-		}
-	}
-	
 	private void logHist() {
-		fftLog = new FFT(song.bufferSize(), song.sampleRate());
-		fftLog.logAverages(minFreq, octaveSubs);
-		fftLog.forward(song.mix);
+		fft = new FFT(song.bufferSize(), song.sampleRate());
+		fft.logAverages(minFreq, octaveSubs);
+		fft.forward(song.mix);
 		if (i == 0) {
-			histMaxLevel = new float[fftLog.avgSize()];
-			fftLogAvgs = new float[fftLog.avgSize()];
+			fftMax = new float[histLength];
+			fftAvgs = new float[histLength];
 			i++;
 		}
-		for(int i = 0; i < fftLog.avgSize(); i++) {
-			//float scale = map(exp(i*histScale), 0, fftLog.avgSize(), (float).02, (float).1); 
-			fftLogAvgs[i] = fftLog.getAvg(i)*histScale();//exp(fftLog.getAvg(i)*scale);
-			if (fftLogAvgs[i] > histMaxLevel[i]) {
-				histMaxLevel[i] = fftLogAvgs[i];
+		for(int i = 0; i < histLength; i++) {
+			fftAvgs[i] = fft.getAvg(i)*histScale();
+			//histArtsy();
+			if (fftAvgs[i] > fftMax[i]) {
+				fftMax[i] = fftAvgs[i];
 			} else {
-				histMaxLevel[i]*=(float)0.99;
+				fftMax[i]*=(float)0.99;
 			}
-			if (histMaxLevel[i] > histSuperMaxLevel) {
-				histSuperMaxLevel = histMaxLevel[i];
+			if (fftMax[i] > fftMaxVal) {
+				fftMaxVal = fftMax[i];
 			} else {
-				histSuperMaxLevel*=.99;
+				fftMaxVal*=.99;
 			}
 		}
 	}
 	
-	private void histLine() {
-		logHist();
-		stroke(255, 0, 0, 256);
-    	strokeWeight(width/(fftLog.avgSize()+10));
-    	//System.out.println("Highest level: " + histSuperMaxLevel/histScale());
-    	for(int i = 0; i < fftLog.avgSize(); i++) {
-    		stroke(255, 0, 0, 256);
-    		line(i*width/fftLog.avgSize() +10, height, i*width/fftLog.avgSize() +10, height-10 - fftLogAvgs[i]);
-    		stroke(0, 255, 255, 256);
-    		line(i*width/fftLog.avgSize() +10, (float)height-10 - histMaxLevel[i], i*width/fftLog.avgSize() +10, (float)height-10 -histMaxLevel[i]-2);
-    	}
+	private void histArtsy() {
+		
 	}
 	
 	private void hist3d() {
-		logHist();
-		translate((-95*(fftLog.avgSize()+2))/2, 600, 0);
-		for(int i = 0; i < fftLog.avgSize(); i++) {
-			translate(100, 0, 0);
-			levelVis(fftLogAvgs[i], histMaxLevel[i]);
-		}
-	}
-	
-	private void level2d() {
-		stroke(0, 255, 0, 255/2);
-		strokeWeight(50);
-		line((float)width/2, (float)height*15/16, (float)width/2,
-			(float)height*15/16 - song.mix.level()*(float)levelScale()*2);
 		
-		float maxHeight = maxAmplitude()*(float)levelScale();
-		line((float)width/2, (float)height*15/16 - maxLevel*(float)levelScale()*2,
-			(float)width/2, (float)height*15/16 - maxLevel*(float)levelScale()*2);
+		logHist();
+		translate((-95*(histLength))/2, 600, 0);
+		for(int i = 0; i < histLength; i++) {
+			translate(100, 0, 0);
+			levelVis(fftAvgs[i], fftMax[i]);
+		}
 	}
 	
 	private void simpleWave() {
