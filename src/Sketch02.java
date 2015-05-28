@@ -4,7 +4,7 @@ import processing.core.*;
 import processing.event.MouseEvent;
 import ddf.minim.*;
 import ddf.minim.analysis.*;
-import processing.opengl.*;
+//import processing.opengl.*;
 
 public class Sketch02 extends PApplet {
 	//system
@@ -16,7 +16,7 @@ public class Sketch02 extends PApplet {
 	private PVector t = new PVector(0, 0, 0);
 	//3D Camera
 	private float cameraDist = 2500*1;
-	private float scrollingSpeed = 50;
+	private float scrollingSpeed = 100;
 	private float minAX = radians(150);
 	private float maxAX = radians(-150);
 	private float minAY = radians(150);
@@ -30,7 +30,7 @@ public class Sketch02 extends PApplet {
 	private int numOctaves = 7;
 	private int histLength = octaveSubs*numOctaves;
 	private float histScale() {
-		return ((float)height-20.0f)/(128.0f*0.75f);
+		return ((float)height-20.0f)/(128.0f*0.5f);
 	}
 	private float[] fftAvgs;
 	private float[] fftMax;
@@ -44,12 +44,23 @@ public class Sketch02 extends PApplet {
 		frameRate(60);
 		// always start Minim first!
 		minim = new Minim(this);
+		selectInput("Select a file to process:", "fileSelected");
 		
 		//song = minim.loadFile("/home/daniel/Music/tristam/Drumstep_-_Tristam_Braken_-_Flight_Monstercat_Release.mp3", 512*2);
-		song = minim.loadFile("/home/daniel/Downloads/02 My Songs Know What You Did in the Dark (Light Em Up).mp3", 512*2);
+		//song = minim.loadFile("/home/daniel/Downloads/02 My Songs Know What You Did in the Dark (Light Em Up).mp3", 512*2);
 		//song = minim.loadFile("/home/daniel/Music/Dubstep/Ben_Moon_-_New_Beginning.mp3", 512*2);
 		//song = minim.loadFile("/home/daniel/Downloads/Braken - To The Stars.mp3", 512);
-		song.play();
+		//song.play();
+	}
+	
+	public void fileSelected(File selection) {
+		if (selection == null) {
+			println("Window was closed or the user hit cancel.");
+		} else {
+		    println("User selected " + selection.getAbsolutePath());
+		    song = minim.loadFile(selection.getAbsolutePath(), 1<<11);
+		    song.play();
+		}
 	}
 	
 	public void mouseWheel(MouseEvent event) {
@@ -57,6 +68,9 @@ public class Sketch02 extends PApplet {
 		}
 	 
 	public void draw() {
+		if (song == null) { 
+			return; 
+		}
 		background(0);
 		setupCamera();
 		lightSetUp();
@@ -83,14 +97,14 @@ public class Sketch02 extends PApplet {
 				map(mouseX, 0, width, minAX, maxAX));
 	}
 
-	private void levelVis(float boxHeight, float maxAmp) {
-		translate(0, -boxHeight/2, 0);
-		material(0, 52, 102, 255);
-		box(90, boxHeight, 90);
-		translate(0, -maxAmp + boxHeight/2, 0);
-		material(255, 0, 0, 255);
+	private void levelVis(int index) {
+		translate(0, -fftAvgs[index]/2, 0);
+		material(0, 0, 255, 255);
+		box(90, fftAvgs[index], 90);
+		translate(0, -fftMax[index] + fftAvgs[index]/2, 0);
+		material(map(fftMax[index], 0f, fftMaxVal, 0f, 255f), 0, map(fftMax[index], fftMaxVal, 0, 0, 255), 255);
 		box(90, maxLevelBoxHeight, 90);
-		translate(0, maxAmp, 0);
+		translate(0, fftMax[index], 0);
 	}
 	
 	public void material(float r, float g, float b, int s) {
@@ -140,7 +154,7 @@ public class Sketch02 extends PApplet {
 		translate((-95*(histLength))/2, 600, 0);
 		for(int i = 0; i < histLength; i++) {
 			translate(100, 0, 0);
-			levelVis(fftAvgs[i], fftMax[i]);
+			levelVis(i);
 		}
 	}
 	
