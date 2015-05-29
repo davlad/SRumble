@@ -33,6 +33,9 @@ public class Sketch02 extends PApplet {
 	private int histLength() {
 		return octaveSubs*numOctaves;
 	}
+	private float totalLength() {
+		return histLength()*(boxWidth+boxSpacing);
+	}
 	private float histScale() {
 		return ((float)height-20.0f)/(128.0f*5f);
 	}
@@ -50,43 +53,25 @@ public class Sketch02 extends PApplet {
 	private boolean redder = false;
 	private boolean greener = false;
 	private boolean bluer = false;
-	private int maxSat = 230;
+	private int maxSat = 200;
 	private int cSpeed = 5;
 	private int bgR = 0;
 	private int bgG = 0;
 	private int bgB = 0;
+	private float scrubScale = 10;
 	
 	public void keyPressed() {
 		if(key == CODED) {
-			if (keyCode == RIGHT) {
-				addOctSubs = true;
-			}
-			if (keyCode == LEFT) {
-				subOctSubs = true;
-			}
-			if (keyCode == UP) {
-				addHistHeight = true;
-			}
-			if (keyCode == DOWN) {
-				subHistHeight = true;
-			}
+			if (keyCode == RIGHT) {addOctSubs = true;}
+			if (keyCode == LEFT) {subOctSubs = true;}
+			if (keyCode == UP) {addHistHeight = true;}
+			if (keyCode == DOWN) {subHistHeight = true;}
 		}
-		if(key == 'd') {
-			darker = true;
-		}
-		if(key == 'l') {
-			lighter = true;
-		}
-		if(key == 'r') {
-			redder = true;
-		}
-		if(key == 'g') {
-			greener = true;
-		}
-		if(key == 'b') {
-			bluer = true;
-		}
-		
+		if(key == 'd') {darker = true;}
+		if(key == 'l') {lighter = true;}
+		if(key == 'r') {redder = true;}
+		if(key == 'g') {greener = true;}
+		if(key == 'b') {bluer = true;}
 	}
 	
 	public void keyReleased() {
@@ -138,32 +123,36 @@ public class Sketch02 extends PApplet {
 		textSize(24);
 		material(0, 255, 0, 255);
 		translate(-((histLength())*(boxWidth+boxSpacing)), 30, 0);
-		text(	"Height: " + (0-histHeightPos) + 
-				"; Octave Subdivisions: " + octaveSubs +
+		text(	"Octave Subdivisions: " + octaveSubs +
 				"; Background RGB: " +bgR +", "+bgG+", "+bgB + ";",
 				0, 0, 0);
-		translate((song.position()*(histLength()*(boxWidth+boxSpacing))/song.length())/2, 30, 0);
-		box(song.position()*(histLength()*(boxWidth+boxSpacing))/song.length(), 20, 20);
+		scrubDisp();
+		text(meta.title(), -totalLength(), 60, 0);
+		translate(-totalLength(), 100, 0);
+		simpleWave();
+		noStroke();
+	}
+	
+	private void scrubDisp() {
+		float songPos = song.position()*totalLength()/song.length();
+		translate((songPos)/2, 30, 0);
+		box(songPos, scrubScale, scrubScale);
 		int minutes = song.position()/60000;
 		int seconds = song.position()/1000 - minutes*60;
 		if (seconds > 9) {
-			text(minutes+":"+seconds, (song.position()*(histLength()*(boxWidth+boxSpacing))/song.length())/2 -10, 30, 0);
+			text(minutes+":"+seconds, songPos/2, 30, 0);
 		} else {
-			text(minutes+":0"+seconds, (song.position()*(histLength()*(boxWidth+boxSpacing))/song.length())/2 -10, 30, 0);
+			text(minutes+":0"+seconds, songPos/2, 30, 0);
 		}
-		translate((histLength()*(boxWidth+boxSpacing)) - (song.position()*(histLength()*(boxWidth+boxSpacing))/song.length())/2+10, 0, 0);
-		box(20);
+		translate(totalLength() - songPos/2 +10, 0, 0);
+		box(scrubScale);
 		int tMins = song.length()/60000;
 		int tSecs = song.length()/1000 - tMins*60;
-		if (seconds > 9) {
+		if (tSecs > 9) {
 			text(tMins+":"+tSecs, 20, 0, 0);
 		} else {
 			text(tMins+":0"+tSecs, 20, 0, 0);
 		}
-		text(meta.title(), -(histLength()*(boxWidth+boxSpacing)), 60, 0);
-		translate(-histLength()*(boxWidth+boxSpacing), 100, 0);
-		simpleWave();
-		stroke(0);
 	}
 	
 	private void respondToKeys() {
@@ -178,7 +167,7 @@ public class Sketch02 extends PApplet {
 		if(addHistHeight == true && histHeightPos > 0) {
 			histHeightPos-=10;
 		}
-		if(subHistHeight == true && histHeightPos < 500) {
+		if(subHistHeight == true && histHeightPos < 250) {
 			histHeightPos+=10;
 		}
 		if(darker == true) {decR(); decG(); decB();}
@@ -266,7 +255,7 @@ public class Sketch02 extends PApplet {
 	
 	private void hist3d() {
 		logHist();
-		translate(-((histLength()+1)*(boxWidth+boxSpacing))/2, histHeightPos, 0);
+		translate(-totalLength()/2, histHeightPos, 0);
 		for(int i = 0; i < histLength(); i++) {
 			translate(boxWidth+boxSpacing, 0, 0);
 			levelVis(i);
@@ -277,7 +266,7 @@ public class Sketch02 extends PApplet {
 		stroke(255);
 		strokeWeight(2);
 		float[] samples = song.mix.toArray();
-		float step = (float)(histLength()*(boxWidth+boxSpacing))/(float)(samples.length-1);
+		float step = (float)totalLength()/(float)(samples.length-1);
 		for(int i = 0; i < samples.length - 1; i++) {
 			line(i*step, samples[i]*50, (i+1)*step, samples[i+1]*50);
 		}
