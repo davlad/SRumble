@@ -20,10 +20,10 @@ public class Sketch02 extends PApplet {
 	private float minAY = radians(150);
 	private float maxAY = radians(-150);
 	//LevelVis
-	private float maxLevelBoxHeight = 3;
-	private float boxWidth = 17;
+	private float maxLevelBoxHeight = 5;
+	private float boxWidth = 20;
 	private float boxDepth = 20;
-	private float boxSpacing = 2;
+	private float boxSpacing = 5;
 	private float histHeightPos = 200;
 	//LogarithmicFFT
 	private FFT fft;
@@ -55,7 +55,6 @@ public class Sketch02 extends PApplet {
 	private int bgR = 0;
 	private int bgG = 0;
 	private int bgB = 0;
-	int dragX;
 	
 	public void keyPressed() {
 		if(key == CODED) {
@@ -162,10 +161,13 @@ public class Sketch02 extends PApplet {
 			text(tMins+":0"+tSecs, 20, 0, 0);
 		}
 		text(meta.title(), -(histLength()*(boxWidth+boxSpacing)), 60, 0);
+		translate(-histLength()*(boxWidth+boxSpacing), 100, 0);
+		simpleWave();
+		stroke(0);
 	}
 	
 	private void respondToKeys() {
-		if(addOctSubs == true && octaveSubs < 13) {
+		if(addOctSubs == true && octaveSubs < 12) {
 			octaveSubs++;
 			i=0;
 		}
@@ -265,9 +267,7 @@ public class Sketch02 extends PApplet {
 	private void hist3d() {
 		logHist();
 		translate(-((histLength()+1)*(boxWidth+boxSpacing))/2, histHeightPos, 0);
-		//translate(0, histHeightPos, 0);
 		for(int i = 0; i < histLength(); i++) {
-			//rotateY(radians(360)/histLength);
 			translate(boxWidth+boxSpacing, 0, 0);
 			levelVis(i);
 		}
@@ -277,9 +277,9 @@ public class Sketch02 extends PApplet {
 		stroke(255);
 		strokeWeight(2);
 		float[] samples = song.mix.toArray();
-		float step = (float)width/(float)(samples.length-1);
+		float step = (float)(histLength()*(boxWidth+boxSpacing))/(float)(samples.length-1);
 		for(int i = 0; i < samples.length - 1; i++) {
-			line(i*step, height*3/4 + samples[i]*50, (i+1)*step, height*3/4 + samples[i+1]*50);
+			line(i*step, samples[i]*50, (i+1)*step, samples[i+1]*50);
 		}
 	}
 
