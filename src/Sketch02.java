@@ -11,6 +11,7 @@ public class Sketch02 extends PApplet {
 	static final long serialVersionUID = 1;
 	private Minim minim;
 	private AudioPlayer song;
+	private AudioMetaData meta;
 	//3D Camera
 	private float cameraDist = 1000;
 	private float scrollingSpeed = 50;
@@ -21,7 +22,7 @@ public class Sketch02 extends PApplet {
 	//LevelVis
 	private float maxLevelBoxHeight = 3;
 	private float boxWidth = 17;
-	private float boxDepth = 15;
+	private float boxDepth = 20;
 	private float boxSpacing = 2;
 	private float histHeightPos = 200;
 	//LogarithmicFFT
@@ -40,20 +41,24 @@ public class Sketch02 extends PApplet {
 	private float fftMaxVal = 0;
 	private int i = 0;
 	//key bindings
-	boolean addOctSubs = false;
-	boolean subOctSubs = false;
-	boolean addHistHeight = false;
-	boolean subHistHeight = false;
-	boolean darker = false;
-	boolean lighter = false;
-	boolean redder = false;
-	boolean bluer = false;
-	boolean greener = false;
-
-	//color c;
+	private boolean addOctSubs = false;
+	private boolean subOctSubs = false;
+	private boolean addHistHeight = false;
+	private boolean subHistHeight = false;
+	private boolean darker = false;
+	private boolean lighter = false;
+	private boolean redder = false;
+	private boolean greener = false;
+	private boolean bluer = false;
+	private int maxSat = 230;
+	private int cSpeed = 5;
+	private int bgR = 0;
+	private int bgG = 0;
+	private int bgB = 0;
+	int dragX;
 	
 	public void keyPressed() {
-		if (key == CODED) {
+		if(key == CODED) {
 			if (keyCode == RIGHT) {
 				addOctSubs = true;
 			}
@@ -67,6 +72,21 @@ public class Sketch02 extends PApplet {
 				subHistHeight = true;
 			}
 		}
+		if(key == 'd') {
+			darker = true;
+		}
+		if(key == 'l') {
+			lighter = true;
+		}
+		if(key == 'r') {
+			redder = true;
+		}
+		if(key == 'g') {
+			greener = true;
+		}
+		if(key == 'b') {
+			bluer = true;
+		}
 		
 	}
 	
@@ -75,6 +95,11 @@ public class Sketch02 extends PApplet {
 		subOctSubs = false;
 		addHistHeight = false;
 		subHistHeight = false;
+		darker = false;
+		lighter = false;
+		redder = false;
+		greener = false;
+		bluer = false;
 	}
 	
 	public void setup() {
@@ -91,6 +116,7 @@ public class Sketch02 extends PApplet {
 		} else {
 		    println("User selected " + selection.getAbsolutePath());
 		    song = minim.loadFile(selection.getAbsolutePath(), 1<<11);
+		    meta = song.getMetaData();
 		    song.play();
 		}
 	}
@@ -100,33 +126,72 @@ public class Sketch02 extends PApplet {
 	}
 	 
 	public void draw() {
-		if (song == null) { 
-			return; 
-		}
-		background(0);
+		if (song == null) {return;}
+		respondToKeys();
+		background(color(bgR, bgG, bgB));
 		setupCamera();
 		lightSetUp();
-		respondToKeys();
 		hist3d();
+		specs();
+	}
+	
+	private void specs() {
+		textSize(24);
+		material(0, 255, 0, 255);
+		translate(-((histLength())*(boxWidth+boxSpacing)), 30, 0);
+		text(	"Height: " + (0-histHeightPos) + 
+				"; Octave Subdivisions: " + octaveSubs +
+				"; Background RGB: " +bgR +", "+bgG+", "+bgB + ";",
+				0, 0, 0);
+		translate((song.position()*(histLength()*(boxWidth+boxSpacing))/song.length())/2, 30, 0);
+		box(song.position()*(histLength()*(boxWidth+boxSpacing))/song.length(), 20, 20);
+		int minutes = song.position()/60000;
+		int seconds = song.position()/1000 - minutes*60;
+		if (seconds > 9) {
+			text(minutes+":"+seconds, (song.position()*(histLength()*(boxWidth+boxSpacing))/song.length())/2 -10, 30, 0);
+		} else {
+			text(minutes+":0"+seconds, (song.position()*(histLength()*(boxWidth+boxSpacing))/song.length())/2 -10, 30, 0);
+		}
+		translate((histLength()*(boxWidth+boxSpacing)) - (song.position()*(histLength()*(boxWidth+boxSpacing))/song.length())/2+10, 0, 0);
+		box(20);
+		int tMins = song.length()/60000;
+		int tSecs = song.length()/1000 - tMins*60;
+		if (seconds > 9) {
+			text(tMins+":"+tSecs, 20, 0, 0);
+		} else {
+			text(tMins+":0"+tSecs, 20, 0, 0);
+		}
+		text(meta.title(), -(histLength()*(boxWidth+boxSpacing)), 60, 0);
 	}
 	
 	private void respondToKeys() {
-		if (addOctSubs == true && octaveSubs < 13) {
+		if(addOctSubs == true && octaveSubs < 13) {
 			octaveSubs++;
 			i=0;
 		}
-		if (subOctSubs == true && octaveSubs > 1) {
+		if(subOctSubs == true && octaveSubs > 1) {
 			octaveSubs--;
 			i=0;
 		}
-		if (addHistHeight == true && histHeightPos > 0) {
+		if(addHistHeight == true && histHeightPos > 0) {
 			histHeightPos-=10;
 		}
-		if (subHistHeight == true && histHeightPos < 500) {
+		if(subHistHeight == true && histHeightPos < 500) {
 			histHeightPos+=10;
 		}
-		
+		if(darker == true) {decR(); decG(); decB();}
+		if(lighter == true) {incR(); incG(); incB();}
+		if(redder == true) {incR(); decG(); decB();}
+		if(greener == true) {decR(); incG(); decB();}
+		if(bluer == true) {decR(); decG(); incB();}	
 	}
+	
+	private void incR() {if(bgR < maxSat){bgR+=cSpeed;}}
+	private void decR() {if(bgR > 0){bgR-=cSpeed;}}
+	private void incG() {if(bgG < maxSat){bgG+=cSpeed;}}
+	private void decG() {if(bgG > 0){bgG-=cSpeed;}}
+	private void incB() {if(bgB < maxSat){bgB+=cSpeed;}}
+	private void decB() {if(bgB > 0){bgB-=cSpeed;}}
 
 	private void setupCamera() {
 		PVector cameraPosition = cameraPos();
