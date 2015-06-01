@@ -1,5 +1,9 @@
 import java.io.File;
 
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.filechooser.FileFilter;
+
 import processing.core.*;
 import processing.event.MouseEvent;
 import ddf.minim.*;
@@ -42,7 +46,7 @@ public class Sketch02 extends PApplet {
 	private float[] fftAvgs;
 	private float[] fftMax;
 	private float fftMaxVal = 0;
-	private int i = 0;
+	private boolean createList = true;
 	//key bindings
 	private boolean addOctSubs = false;
 	private boolean subOctSubs = false;
@@ -59,6 +63,17 @@ public class Sketch02 extends PApplet {
 	private int bgG = 0;
 	private int bgB = 0;
 	private float scrubScale = 10;
+	//particles
+	private float originDist = 1000;
+	private PVector origin1 = new PVector(-originDist, -originDist, 0);
+	private PVector origin2 = new PVector(originDist, -originDist, 0);
+	private PVector origin3 = new PVector(-originDist, originDist, 0);
+	private PVector origin4 = new PVector(originDist, originDist, 0);
+	private Particle[] p = new Particle[600];
+	private boolean createPs = true;
+	private float maxSpeed = 0.1f;
+	private float minSize = 1;
+	private float maxSize = 10;
 	
 	public void keyPressed() {
 		if(key == CODED) {
@@ -91,6 +106,13 @@ public class Sketch02 extends PApplet {
 		frameRate(60);
 		// always start Minim first!
 		minim = new Minim(this);
+		try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (ClassNotFoundException | InstantiationException
+				| IllegalAccessException | UnsupportedLookAndFeelException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		selectInput("Select a file to process:", "fileSelected");
 	}
 	
@@ -105,6 +127,50 @@ public class Sketch02 extends PApplet {
 		}
 	}
 	
+	private void particles() {
+		if(createPs) {makeParticles();}
+		pushMatrix();
+		noStroke();
+		fill(255, 200);
+		drawParticles();
+		translate(0, 0, 50);
+		popMatrix();
+	}
+	
+	private void rotToCamera() {
+		PVector c = cameraPos();
+		float x = asin(c.y/cameraDist);
+		float y = acos(c.x/(cameraDist*cos(x)));
+		rotateY(y);
+		rotateX(x);
+	}
+	
+	private void makeParticles() {
+		for(int i = 0; i < p.length; i++) {
+			if (i%4 == 0)
+				p[i] = new Particle(origin1.x, origin1.y, origin1.z, 0, 0, 0, random(minSize, maxSize));
+			if (i%4 == 1)
+				p[i] = new Particle(origin2.x, origin2.y, origin2.z, 0, 0, 0, random(minSize, maxSize));
+			if (i%4 == 2)
+				p[i] = new Particle(origin3.x, origin3.y, origin3.z, 0, 0, 0, random(minSize, maxSize));
+			if (i%4 == 3)
+				p[i] = new Particle(origin4.x, origin4.y, origin4.z, 0, 0, 0, random(minSize, maxSize));
+		}
+		createPs = false;
+	}
+	
+	private void drawParticles() {
+		for(int i = 0; i < p.length; i++) {
+			pushMatrix();
+			translate(p[i].x(), p[i].y(), p[i].z());
+			rotToCamera();
+			ellipse(0, 0, p[i].r(), p[i].r());
+			popMatrix();
+			p[i].updateVel(random(-1, 1) * maxSpeed, random(-1, 1) * maxSpeed, random(-1, 1) * maxSpeed);
+			p[i].update();
+		}
+	}
+	
 	public void mouseWheel(MouseEvent event) {
 		cameraDist += event.getCount()*scrollingSpeed;
 	}
@@ -115,8 +181,11 @@ public class Sketch02 extends PApplet {
 		background(color(bgR, bgG, bgB));
 		setupCamera();
 		lightSetUp();
+		pushMatrix();
 		hist3d();
 		specs();
+		popMatrix();
+		particles();
 	}
 	
 	private void specs() {
@@ -158,11 +227,11 @@ public class Sketch02 extends PApplet {
 	private void respondToKeys() {
 		if(addOctSubs == true && octaveSubs < 12) {
 			octaveSubs++;
-			i=0;
+			createList = true;
 		}
 		if(subOctSubs == true && octaveSubs > 1) {
 			octaveSubs--;
-			i=0;
+			createList = true;
 		}
 		if(addHistHeight == true && histHeightPos > 0) {
 			histHeightPos-=10;
@@ -233,10 +302,10 @@ public class Sketch02 extends PApplet {
 		fft = new FFT(song.bufferSize(), song.sampleRate());
 		fft.logAverages(minFreq, octaveSubs);
 		fft.forward(song.mix);
-		if (i == 0) {
+		if (createList) {
 			fftMax = new float[histLength()];
 			fftAvgs = new float[histLength()];
-			i++;
+			createList = false;
 		}
 		for(int i = 0; i < histLength(); i++) {
 			fftAvgs[i] = fft.getAvg(i)*histScale();
