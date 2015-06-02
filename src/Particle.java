@@ -9,21 +9,13 @@ public class Particle {
 	private float limit = 5000;
 	
 	Particle(float xpos, float ypos, float zpos, float velx, float vely, float velz, float r) {
-		x = xpos;
-		y = ypos;
-		z = zpos;
-		ox = xpos;
-		oy = ypos;
-		oz = zpos;
-		vx= velx;
-		vy= vely;
-		vz= velz;
+		x = xpos; y = ypos; z = zpos;
+		ox = xpos; oy = ypos; oz = zpos;
+		vx= velx; vy= vely; vz= velz;
 		radius = r;
 	}
 	
 	public void update() {
-		//vy+= gravity;
-		//vx+= windX;
 		x+= vx;
 		y+= vy;
 		z+= vz;
